@@ -12,7 +12,7 @@ handler_should_only_keep_the_last_N_events_test() ->
         ?assertEqual([e4, e3], ne_event_handler_srv:last_events()),
         ok
     after
-        Res = ne_event_handler_srv:stop()
+        ne_event_handler_srv:stop()
     end.
 
 handler_should_return_empty_list_when_no_events_have_been_pushed_test() ->
@@ -21,7 +21,7 @@ handler_should_return_empty_list_when_no_events_have_been_pushed_test() ->
         ?assertEqual([], ne_event_handler_srv:last_events()),
         ok
     after
-        Res = ne_event_handler_srv:stop()
+        ne_event_handler_srv:stop()
     end.
 
 

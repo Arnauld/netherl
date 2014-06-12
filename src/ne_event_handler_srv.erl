@@ -7,7 +7,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0, start_link/1, stop/0]).
+-export([start_link/0, start_link/1, stop/0, sync_stop/0]).
 -export([push_event/1, last_events/0]).
 
 %% ------------------------------------------------------------------
@@ -30,6 +30,9 @@ start_link(BufferSize) ->
 stop() ->
     gen_server:cast(?SERVER, stop).
 
+sync_stop() ->
+    gen_server:call(?SERVER, stop).
+
 push_event(Event) ->
     gen_server:cast(?SERVER, {push_event, Event}).
 
@@ -49,7 +52,6 @@ init([BufferSize]) ->
     % When ordered to shutdown, the gen_server will then 
     % call the callback function terminate(shutdown, State):
     process_flag(trap_exit, true),
-    io:format("ne_event_handler_srv:init() [~p]~n", [BufferSize]),
     {ok, {0, BufferSize, []}}.
 
 %%
@@ -59,11 +61,8 @@ handle_call(stop, _From, State) ->
     {stop, normal, State};
 handle_call({last_events}, _From, State) ->
     {_Size, _MaxSize, Events} = State,
-    Reply = Events,
-    io:format("ne_event_handler_srv:handle_call:last_events ~p ~n", [Reply]),
-    {reply, Reply, State};
-handle_call(Request, _From, State) ->
-    io:format("ne_event_handler_srv:handle_call:unknown: ~p~n", [Request]),
+    {reply, Events, State}; %% {response_code, Response, NewState}
+handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
 %%
@@ -72,33 +71,15 @@ handle_call(Request, _From, State) ->
 handle_cast(stop, State) ->
     {stop, normal, State};
 handle_cast({push_event, Event}, State) ->
-    try
-        erlang:display("ne_event_handler_srv:push_event"),
-        erlang:display(Event),
-        erlang:display(State),
-        erlang:display("::"),
-        
-        io:format("ne_event_handler_srv:handle_cast:push_event() before: ~p~n", [State]),
-        {Size, MaxSize, LastEvents} = State,
-        io:format("ne_event_handler_srv:handle_cast:push_event() before: [~p, ~p, ~p]~n", [Size, MaxSize, LastEvents]),
-        Updated = if 
-                    Size == MaxSize ->
-                        {Size, MaxSize, [Event | drop_last(LastEvents)]};
-                    true ->
-                        {Size+1, MaxSize, [Event|LastEvents]}
-                  end,
-        io:format("ne_event_handler_srv:handle_cast:push_event() after: ~p => ~p ~n", [Event, Updated]),
-        {noreply, Updated}
-    catch
-        What:Reason ->
-            erlang:display("ne_event_handler_srv:Ooooooooouuch!"),
-            erlang:display(What),
-            erlang:display(Reason),
-            erlang:display(erlang:get_stacktrace())
-    end;
-
-handle_cast(Msg, State) ->
-    io:format("ne_event_handler_srv:handle_cast:unknown: ~p~n", [Msg]),
+    {Size, MaxSize, LastEvents} = State,
+    Updated = if 
+                Size == MaxSize ->
+                    {Size, MaxSize, [Event | drop_last(LastEvents)]};
+                true ->
+                    {Size+1, MaxSize, [Event|LastEvents]}
+              end,
+    {noreply, Updated};
+handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%
@@ -107,12 +88,15 @@ handle_cast(Msg, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(Reason, _State) ->
-    erlang:display("ne_event_handler_srv:terminate"),
-    erlang:display(self()),
-    erlang:display(Reason),
+%%
+%% terminate/2
+%% 
+terminate(_Reason, _State) ->
     ok.
 
+%%
+%% code_change/3
+%% 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 

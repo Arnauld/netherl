@@ -9,7 +9,7 @@
 %% ------------------------------------------------------------------
 
 -export([open_store/0, close_store/0]).
--export([start_link/0, stop/0]).
+-export([start_link/0, stop/0, sync_stop/0]).
 -export([append_events/2, get_events/1]).
 
 %% ------------------------------------------------------------------
@@ -31,7 +31,11 @@ close_store() ->
     ets:delete(?TABLE_ID).
 
 stop() ->
-    gen_server:cast(?SERVER, shutdown).
+    gen_server:cast(?SERVER, stop).
+
+sync_stop() ->
+    gen_server:call(?SERVER, stop).
+
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).

@@ -39,7 +39,6 @@ init([]) ->
     {ok, #state{}}.
 
 handle_event(Event, State) ->
-    io:fwrite("EVENT <~p> ~n", [Event]),
     ne_event_handler_srv:push_event(Event),
     {ok, State}.
 
