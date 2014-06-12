@@ -14,8 +14,8 @@ start_bus() ->
 
 stop_bus() ->
     ne_event_handler:unregister(),
-    ne_event_handler_srv:stop(),
-    ne_event_bus:stop().
+    ne_event_handler_srv:stop(true),
+    ne_event_bus:stop(true).
 
 %% ------------------------------------------------------------------
 %% Tests

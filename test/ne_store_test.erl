@@ -12,7 +12,7 @@ start_store() ->
     ne_store:start_link().
 
 stop_store() ->
-    ne_store:stop(),
+    ne_store:stop(true),
     ne_store:close_store().
 
 %% ------------------------------------------------------------------

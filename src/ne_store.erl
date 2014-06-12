@@ -9,7 +9,7 @@
 %% ------------------------------------------------------------------
 
 -export([open_store/0, close_store/0]).
--export([start_link/0, stop/0, sync_stop/0]).
+-export([start_link/0, stop/1]).
 -export([append_events/2, get_events/1]).
 
 %% ------------------------------------------------------------------
@@ -30,12 +30,13 @@ open_store() ->
 close_store() ->
     ets:delete(?TABLE_ID).
 
-stop() ->
-    gen_server:cast(?SERVER, stop).
-
-sync_stop() ->
-    gen_server:call(?SERVER, stop).
-
+stop(Async) ->
+    if
+        Async == false ->
+            gen_server:call(?SERVER, shutdown);
+        true ->
+            gen_server:cast(?SERVER, shutdown)
+    end.
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -63,8 +64,9 @@ init(Args) ->
 %%
 %% handle_call/3
 %% 
-handle_call(stop, _From, State) ->
+handle_call(shutdown, _From, State) ->
     {stop, normal, State};
+    
 handle_call({get_events, Key}, _From, State) ->
     Events = lists:reverse(get_raw_events(Key)),
     {reply, Events, State}.
@@ -73,7 +75,7 @@ handle_call({get_events, Key}, _From, State) ->
 %%
 %% handle_cast/2
 %% 
-handle_cast(stop, State) ->
+handle_cast(shutdown, State) ->
     {stop, normal, State};
 
 handle_cast({append_events, Key, Events}, State) ->

@@ -6,7 +6,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0, stop/0]).
+-export([start_link/0, stop/1]).
 -export([register_handler/2, unregister_handler/2]).
 -export([publish_event/1, sync_publish_event/1]).
 
@@ -18,7 +18,7 @@
 start_link() ->
     gen_event:start_link({local, ?SERVER}).
 
-stop() ->
+stop(_Async) ->
     not_implemented.
 
 publish_event(Event) ->

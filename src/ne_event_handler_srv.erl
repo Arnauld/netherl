@@ -7,7 +7,7 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([start_link/0, start_link/1, stop/0, sync_stop/0]).
+-export([start_link/0, start_link/1, stop/1]).
 -export([push_event/1, last_events/0]).
 
 %% ------------------------------------------------------------------
@@ -27,11 +27,13 @@ start_link() ->
 start_link(BufferSize) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [BufferSize], []).
 
-stop() ->
-    gen_server:cast(?SERVER, stop).
-
-sync_stop() ->
-    gen_server:call(?SERVER, stop).
+stop(Async) ->
+    if
+        Async == false ->
+            gen_server:call(?SERVER, shutdown);
+        true ->
+            gen_server:cast(?SERVER, shutdown)
+    end.
 
 push_event(Event) ->
     gen_server:cast(?SERVER, {push_event, Event}).
@@ -57,8 +59,6 @@ init([BufferSize]) ->
 %%
 %% handle_call/3
 %%
-handle_call(stop, _From, State) ->
-    {stop, normal, State};
 handle_call({last_events}, _From, State) ->
     {_Size, _MaxSize, Events} = State,
     {reply, Events, State}; %% {response_code, Response, NewState}
@@ -68,7 +68,7 @@ handle_call(_Request, _From, State) ->
 %%
 %% handle_cast/2
 %% 
-handle_cast(stop, State) ->
+handle_cast(shutdown, State) ->
     {stop, normal, State};
 handle_cast({push_event, Event}, State) ->
     {Size, MaxSize, LastEvents} = State,
