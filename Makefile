@@ -1,10 +1,24 @@
-all: deps compile
+REBAR=./rebar
+
+all: clean compile test analyze
 
 compile:
-	./rebar get-deps compile
+	@$(REBAR) get-deps compile
+
+edoc:
+	@$(REBAR) doc
+
+test:
+	@rm -rf .eunit
+	@mkdir -p .eunit
+	@echo on
+	@$(REBAR) eunit skip_deps=true
 
 clean:
-	./rebar clean
+	@$(REBAR) clean
 
-rel:
-	./rebar generate
+analyze:
+	@dialyzer ebin/*.beam
+
+init-analyze:
+	@dialyzer --build_plt --apps erts kernel stdlib mnesia
