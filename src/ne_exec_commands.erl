@@ -6,16 +6,16 @@
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([move_forward/1]).
+-export([execute/2]).
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
 %% ------------------------------------------------------------------
 
-move_forward({World, Exec}) ->
+execute(move_forward, {World, Exec, _Prgm}) ->
   Direction = Exec#execution.direction,
-  [X0, Y0] = Exec#execution.location,
-  [DX, DY] = offset_for_direction(Direction),
+  [X0, Y0]  = Exec#execution.location,
+  [DX, DY]  = offset_for_direction(Direction),
   NewLocation = [X0+DX, Y0+DY],
   {World, Exec#execution{location=NewLocation}}.
 
