@@ -1,4 +1,4 @@
--module(ne_exec_commands).
+-module(ne_commands).
 
 -include("netherl.hrl").
 
@@ -13,16 +13,21 @@
 %% ------------------------------------------------------------------
 
 execute(move_forward, {World, Exec, _Prgm}) ->
-  Direction = Exec#execution.direction,
-  [X0, Y0]  = Exec#execution.location,
+  {Direction, X0, Y0} = direction_XY(Exec),
   [DX, DY]  = offset_for_direction(Direction),
   NewLocation = [X0+DX, Y0+DY],
-  {World, Exec#execution{location=NewLocation}}.
+  [{program_moved, NewLocation}].
 
 
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
+
+direction_XY(Exec) ->
+  Direction = Exec#execution.direction,
+  [X0, Y0]  = Exec#execution.location,
+  {Direction, X0, Y0}.
+
 
 offset_for_direction(north) -> [0, -1];
 offset_for_direction(south) -> [0, +1];
