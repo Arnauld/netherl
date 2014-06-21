@@ -2,15 +2,37 @@
 
 -include("netherl.hrl").
 -define(PROCESS_TIME_OUT, 45000).
--record(state, {id, prgm, execution, changes=[]}).
+
+-record(exec, {id, 
+                prgm, 
+                prgm_idx  = 0, 
+                prgm_fn   = main,
+                location  = {0,0},
+                direction = north,
+                uncommited_events=[]}).
 
 
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------
 
--export([new/0, init/4, process_unsaved_changes/2, load_from_history/2]).
--export([move_forward/2]).
+-export([new/1, 
+         process_unsaved_changes/2,
+         uncommited_events/1,
+         load_from_history/2]).
+
+-export([init_program/2,
+         locate_at/2,
+         locate_at/3,
+         look_at/2,
+         look_at/3,
+         move_forward/2, 
+         rotate_left/1, 
+         rotate_right/1]).
+
+-export([location/1,
+         direction/1]).
+
 
 %% ------------------------------------------------------------------
 %% API Function Definitions
@@ -20,106 +42,121 @@
 %% Event Sourcing...
 %% ------------------
 
-new() ->
-    spawn(fun() -> start_loop() end).
+new(Id) ->
+    #exec{id = Id}.
 
-init(Pid, Id, Prgm, Execution) ->
-    Pid ! {attempt_command, {init, Id, Prgm, Execution}}.
+process_unsaved_changes(Exec, Saver) ->
+    Id = Exec#exec.id,
+    Saver(Id, uncommited_events(Exec)),
+    NewExec = Exec#exec{uncommited_events=[]},
+    NewExec.
 
-process_unsaved_changes(Pid, Saver) ->
-    Pid ! {process_unsaved_changes, Saver}.
+uncommited_events(Exec) ->
+    lists:reverse(Exec#exec.uncommited_events).
 
-load_from_history(Pid, Events) ->
-    Pid ! {load_from_history, Events}.
+load_from_history(Exec, []) ->
+    Exec;
+load_from_history(Exec, [Event|Rest]) ->
+    NewExec = apply_event(Exec, Event),
+    load_from_history(NewExec, Rest).
+
 
 %% ------------------
-%% Domain
+%% Domain - State
 %% ------------------
 
-move_forward(Pid, World) ->
-    Pid ! {attempt_command, {move_forward, World}}.
+location(Exec) ->
+    Exec#exec.location.
+
+direction(Exec) ->
+    Exec#exec.direction.
+
+%% ------------------
+%% Domain - Action
+%% ------------------
+
+locate_at(Exec, Location) ->
+    locate_at(Exec, Location, init).
+
+locate_at(Exec, Location, Reason) ->
+    apply_new_event(Exec, {program_location_adjusted, timestamp(), Location, Reason}).
+
+look_at(Exec, Direction) ->
+    look_at(Exec, Direction, init).
+
+look_at(Exec, Direction, Reason) when Direction==north; 
+                                      Direction==south; 
+                                      Direction==east;
+                                      Direction==west ->
+    apply_new_event(Exec, {program_direction_adjusted, timestamp(), Direction, Reason});
+
+look_at(_Exec, Direction, _Reason) ->
+    throw({unsupported_direction, Direction}).
 
 
+init_program(Exec, Prgm) ->
+    apply_new_event(Exec, {program_initialized, timestamp(), Prgm}).
 
 
+move_forward(Exec, _World) ->
+    Direction = Exec#exec.direction,
+    {X0, Y0}  = Exec#exec.location,
+    {DX, DY}  = offset_for_direction(Direction),
+    NewLocation = {X0+DX, Y0+DY},
+    apply_new_event(Exec, {program_moved, timestamp(), NewLocation}).
+
+
+rotate_left(Exec) ->
+    Direction = Exec#exec.direction,
+    NewDirection = case Direction of
+        north -> west;
+        west  -> south;
+        south -> east;
+        _     -> north
+    end,
+    apply_new_event(Exec, {program_left_rotated, timestamp(), NewDirection}).
+
+    
+rotate_right(Exec) ->
+    Direction = Exec#exec.direction,
+    NewDirection = case Direction of
+        north -> east;
+        east  -> south;
+        south -> west;
+        _     -> north
+    end,
+    apply_new_event(Exec, {program_right_rotated, timestamp(), NewDirection}).
+    
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-%% ------------------
-%% Loop
-%% ------------------
-
-start_loop() -> 
-    State = #state{},
-    loop(State).
-
-
-loop(State) ->
-    %% error_logger:info_msg("Process ~p state:[~p]~n", [self(), State]),
-    receive 
-        {apply_event, Event} ->
-            NewState = apply_event(State, Event),
-            loop(NewState); 
-        {attempt_command, Command} ->
-            NewState = attempt_command(State, Command),
-            loop(NewState);
-        {process_unsaved_changes, Saver} ->
-            Id = State#state.id,
-            Saver(Id, lists:reverse(State#state.changes)),
-            NewState = State#state{changes=[]},
-            loop(NewState);
-        {load_from_history, Events} ->
-            NewState = apply_many_events(#state{}, Events),
-            loop(NewState);
-        Unknown -> 
-            error_logger:warning_msg("Received unknown message (~p)~n", [Unknown]),
-            loop(State)
-        after ?PROCESS_TIME_OUT ->
-            shutting_down
-    end.
-
-
-%% ------------------
-%% Commands
-%% ------------------
-
-attempt_command(State, {init, Id, Prgm, Execution}) ->
-    apply_new_event(State, {initialized, timestamp(), Id, Prgm, Execution});
-
-attempt_command(State, {move_forward, World}) ->
-    Execution = State#state.execution,
-    Direction = Execution#execution.direction,
-    {X0, Y0}  = Execution#execution.location,
-    {DX, DY}  = offset_for_direction(Direction),
-    NewLocation = {X0+DX, Y0+DY},
-    apply_new_event(State, {program_moved, timestamp(), NewLocation}).
-
-
-%% ------------------
-%% Events
-%% ------------------
-
 apply_new_event(State, Event) ->
-    NewState = apply_event(State, Event),
-    CombinedChanges = [Event] ++ NewState#state.changes,
-    NewState#state{changes=CombinedChanges}.
+    NewExec = apply_event(State, Event),
+    CombinedChanges = [Event] ++ NewExec#exec.uncommited_events,
+    NewExec#exec{uncommited_events=CombinedChanges}.
 
-apply_many_events(State, []) ->
-    State;
-apply_many_events(State, [Event|Rest]) ->
-    NewState = apply_event(State, Event),
-    apply_many_events(NewState, Rest).
+%%
+%%
+%%
 
-apply_event(State, {initialized, _Timestamp, Id, Prgm, Execution}) ->
-    State#state{id = Id,
-                execution = Execution,
-                prgm = Prgm};
+apply_event(Exec, {program_location_adjusted, _Timestamp, Location, _Reason}) ->
+    Exec#exec{location=Location};
 
-apply_event(State, {program_moved, _Timestamp, NewLocation}) ->
-    Execution = State#state.execution,
-    NewExecution = Execution#execution{location=NewLocation},
-    State#state{execution=NewExecution}.
+apply_event(Exec, {program_direction_adjusted, _Timestamp, Direction, _Reason}) ->
+    Exec#exec{direction=Direction};
+
+apply_event(Exec, {program_right_rotated, _Timestamp, Direction}) ->
+    Exec#exec{direction=Direction};
+
+apply_event(Exec, {program_left_rotated, _Timestamp, Direction}) ->
+    Exec#exec{direction=Direction};
+
+apply_event(Exec, {program_initialized, _Timestamp, Prgm}) ->
+    Exec#exec{prgm = Prgm};
+
+apply_event(Exec, {program_moved, _Timestamp, NewLocation}) ->
+    Exec#exec{location=NewLocation}.
 
 %% ------------------
 %% Domain
