@@ -47,7 +47,8 @@ new(Id) ->
 
 process_unsaved_changes(Exec, Saver) ->
     Id = Exec#exec.id,
-    Saver(Id, uncommited_events(Exec)),
+    Events = uncommited_events(Exec),
+    Saver(Id, Events),
     NewExec = Exec#exec{uncommited_events=[]},
     NewExec.
 
