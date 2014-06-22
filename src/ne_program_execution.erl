@@ -172,5 +172,6 @@ offset_for_direction(west)  -> {-1, 0}.
 %% Misc
 %% ------------------
 
-timestamp() ->
-    erlang:localtime().
+
+timestamp() -> 
+    ne_util:timestamp(). 
