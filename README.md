@@ -37,3 +37,8 @@ Execute tests:
 Execute tests for dependencies too:
 
     ./rebar compile eunit
+
+### Rake
+
+    $ rake
+    $ rake test
