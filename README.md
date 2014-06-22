@@ -10,8 +10,8 @@
 
 Also
 
-# [Winning the Erlang Edit•Build•Test Cycle](http://fr.slideshare.net/rklophaus/winning-the-edit-build-test-cycle): Many erlang tips'n tricks
-# [sync](https://github.com/rustyio/sync): On-the-fly recompiling and reloading in Erlang. Code without friction.
+* [Winning the Erlang Edit•Build•Test Cycle](http://fr.slideshare.net/rklophaus/winning-the-edit-build-test-cycle): Many erlang tips'n tricks
+* [sync](https://github.com/rustyio/sync): On-the-fly recompiling and reloading in Erlang. Code without friction.
 
 ## REPL
 
