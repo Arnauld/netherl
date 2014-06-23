@@ -99,12 +99,15 @@ init_program(Exec, Prgm) ->
     apply_new_event(Exec, {program_initialized, timestamp(), Prgm}).
 
 
-move_forward(Exec, _World) ->
+move_forward(Exec, World) ->
     Direction = Exec#exec.direction,
     {X0, Y0}  = Exec#exec.location,
     {DX, DY}  = offset_for_direction(Direction),
     NewLocation = {X0+DX, Y0+DY},
-    apply_new_event(Exec, {program_moved, timestamp(), NewLocation}).
+    case ne_world:can_move_to(World, NewLocation) of
+        true  -> apply_new_event(Exec, {program_moved, timestamp(), NewLocation});
+        false -> throw({illegal_move, NewLocation})
+    end.
 
 
 rotate_left(Exec) ->

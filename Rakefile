@@ -27,7 +27,7 @@ task :test do
       print line.gsub($1,green($1))
     when /Failed:\s+(\d+)\.\s+Skipped:\s+(\d+)\.\s+Passed:\s+(\d+)\./
       puts "#{red("Failed: #{$1}")}, Skipped: #{$2}, #{green("Passed: #{$3}")}"
-      `say #{$3} passed but #{$1} failed`
+      `say #{$3} passed but #{$1} tests failed`
     when/(All \d+ tests passed.)/
       print green(line)
       `say #{line}`

@@ -4,7 +4,7 @@
 
 simple_usecase_test() ->
 	Block0   = #block{},
-	Location = [1, 3],
+	Location = {1, 3},
 	%%
 	World0 = ne_world:new_world(),
 	?assertEqual(false, ne_world:block_exists(World0, Location)),

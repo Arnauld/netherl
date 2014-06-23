@@ -13,8 +13,4 @@
 
 %
 %
--record(world, { blocks }).
-
-%
-%
--record(block, {}).
+-record(block, {occupied_by = nobody}).

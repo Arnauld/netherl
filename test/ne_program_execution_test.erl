@@ -28,6 +28,15 @@ move_forward_in_east_direction_test() ->
     {World, Exec0} = prepare_exec({1, 2}, east),
     Exec1 = ne_program_execution:move_forward(Exec0, World),
     ?assertEqual({2, 2}, ne_program_execution:location(Exec1)).
+
+move_forward_should_fail_when_moving_outside_of_the_world_test() ->
+    meck:new(ne_world, []),
+    meck:expect(ne_world, can_move_to, fun(_World, _Location) -> false end),
+
+    % mock called?
+    ?assert(meck:validate(ne_world)),
+    meck:unload(ne_world).
+
     
 %% ------------------
 %% rotate_left
@@ -79,7 +88,17 @@ rotate_right_from_south_direction_test() ->
 
 
 prepare_exec(Location, Direction) ->
-    World = #world{blocks=[]},
+    World = ne_world:new_world([
+            {{0,2}, ne_block:new_block()},
+            {{1,1}, ne_block:new_block()},
+            {{1,2}, ne_block:new_block()},
+            {{2,2}, ne_block:new_block()},
+            {{1,3}, ne_block:new_block()},
+            {{1,4}, ne_block:new_block()},
+            {{1,5}, ne_block:new_block()},
+            {{2,5}, ne_block:new_block()},
+            {{3,5}, ne_block:new_block()}
+        ]),
     Exec0 = ne_program_execution:new("d06f00d"),
     Exec1 = ne_program_execution:init_program(Exec0, #program{}),
     Exec2 = ne_program_execution:locate_at(Exec1, Location),
@@ -94,7 +113,7 @@ prepare_exec(Location, Direction) ->
 %% ------------------
 
 load_from_history_test() ->
-    World = #world{blocks=[]},
+    World  = ne_world:new_world(),
     Events = [{program_initialized,        101, {program, []}},
               {program_location_adjusted,  102, {1,2}, init},
               {program_direction_adjusted, 103, south, init},
@@ -114,7 +133,14 @@ load_from_history_test() ->
 %% ------------------
 
 usecase_001_test() ->
-    World = #world{blocks=[]},
+    World = ne_world:new_world([
+            {{1,2}, ne_block:new_block()},
+            {{1,3}, ne_block:new_block()},
+            {{1,4}, ne_block:new_block()},
+            {{1,5}, ne_block:new_block()},
+            {{2,5}, ne_block:new_block()},
+            {{3,5}, ne_block:new_block()}
+        ]),
     Exec0 = ne_program_execution:new("d06f00d"),
     Exec1 = ne_program_execution:init_program(Exec0, #program{}),
     Exec2 = ne_program_execution:locate_at(Exec1, {1, 2}),
