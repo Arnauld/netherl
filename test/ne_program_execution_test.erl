@@ -104,7 +104,7 @@ prepare_exec(Location, Direction) ->
             {{3,5}, ne_block:new_block()}
         ]),
     Exec0 = ne_program_execution:new("d06f00d"),
-    Exec1 = ne_program_execution:init_program(Exec0, #program{}),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
     Exec2 = ne_program_execution:locate_at(Exec1, Location),
     Exec3 = ne_program_execution:look_at(Exec2, Direction),
     % consume uncommitted events...
@@ -146,7 +146,7 @@ usecase_001_test() ->
             {{3,5}, ne_block:new_block()}
         ]),
     Exec0 = ne_program_execution:new("d06f00d"),
-    Exec1 = ne_program_execution:init_program(Exec0, #program{}),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
     Exec2 = ne_program_execution:locate_at(Exec1, {1, 2}),
     Exec3 = ne_program_execution:look_at(Exec2, south),
     Exec4 = ne_program_execution:move_forward(Exec3, World),

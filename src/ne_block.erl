@@ -1,6 +1,8 @@
 -module(ne_block).
 -include("netherl.hrl").
 
+-record(block, {occupied_by = nobody}).
+
 %% ------------------------------------------------------------------
 %% API Function Exports
 %% ------------------------------------------------------------------

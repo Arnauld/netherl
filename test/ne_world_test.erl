@@ -3,7 +3,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 simple_usecase_test() ->
-	Block0   = #block{},
+	Block0   = ne_block:new_block(),
 	Location = {1, 3},
 	%%
 	World0 = ne_world:new_world(),
