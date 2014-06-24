@@ -18,8 +18,8 @@ new_block() ->
     #block{}.
 
 can_move_to(Block) ->
-	OCCUPIED_BY = Block#block.occupied_by,
-	if
-		OCCUPIED_BY == nobody -> true;
-		true -> false
+	OccupiedBy = Block#block.occupied_by,
+	case OccupiedBy of
+		nobody -> true;
+		_ -> false
     end.

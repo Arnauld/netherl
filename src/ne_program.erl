@@ -17,7 +17,10 @@ new_program() ->
     new_program([]).
 
 new_program(ListOfNamedStmts) ->
-    #program{stmts = ListOfNamedStmts}.
+	Stmts = lists:foldl(fun({Name, Sequence}, Acc) ->
+        [{Name, Sequence}] ++ Acc
+    end, [], ListOfNamedStmts),
+    #program{stmts = Stmts}.
 
 declare_sequence(Program, {Name, Sequence}) ->
 	OldStmts = Program#program.stmts,

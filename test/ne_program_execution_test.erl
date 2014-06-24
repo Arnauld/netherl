@@ -3,6 +3,46 @@
 -include("asserts.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+
+%% ------------------
+%% look_at
+%% ------------------
+
+look_in_the_north_direction_test() ->
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
+    Exec2 = ne_program_execution:look_at(Exec1, north),
+    ?assertEqual(north, ne_program_execution:direction(Exec2)).
+
+look_in_the_south_direction_test() ->
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
+    Exec2 = ne_program_execution:look_at(Exec1, south),
+    ?assertEqual(south, ne_program_execution:direction(Exec2)).
+
+look_in_the_east_direction_test() ->
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
+    Exec2 = ne_program_execution:look_at(Exec1, east),
+    ?assertEqual(east, ne_program_execution:direction(Exec2)).
+
+look_in_the_west_direction_test() ->
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
+    Exec2 = ne_program_execution:look_at(Exec1, west),
+    ?assertEqual(west, ne_program_execution:direction(Exec2)).
+
+look_in_an_invalid_direction_test() ->
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, ne_program:new_program()),
+    try
+        ne_program_execution:look_at(Exec1, south_west),
+        ?fail("an exception should have been raised")
+    catch
+        Error:Reason ->
+            ?assertEqual({throw, {unsupported_direction,south_west}}, {Error, Reason})
+    end.
+
 %% ------------------
 %% move_forward
 %% ------------------
@@ -37,7 +77,7 @@ move_forward_should_fail_when_moving_outside_of_the_world_test() ->
         ?fail("an exception should have been raised")
     catch
         Error:Reason ->
-            ?assertEqual({Error, Reason}, {throw, {illegal_move,{3,2}}})
+            ?assertEqual({throw, {illegal_move,{3,2}}}, {Error, Reason})
     end.
 
 
