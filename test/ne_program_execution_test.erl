@@ -1,5 +1,6 @@
 -module(ne_program_execution_test).
 -include("netherl.hrl").
+-include("asserts.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %% ------------------
@@ -30,12 +31,15 @@ move_forward_in_east_direction_test() ->
     ?assertEqual({2, 2}, ne_program_execution:location(Exec1)).
 
 move_forward_should_fail_when_moving_outside_of_the_world_test() ->
-    meck:new(ne_world, []),
-    meck:expect(ne_world, can_move_to, fun(_World, _Location) -> false end),
+    {World, Exec0} = prepare_exec({2, 2}, east),
+    try
+        ne_program_execution:move_forward(Exec0, World),
+        ?fail("an exception should have been raised")
+    catch
+        Error:Reason ->
+            ?assertEqual({Error, Reason}, {throw, {illegal_move,{3,2}}})
+    end.
 
-    % mock called?
-    ?assert(meck:validate(ne_world)),
-    meck:unload(ne_world).
 
     
 %% ------------------
