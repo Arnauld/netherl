@@ -1,16 +1,9 @@
 -module(ne_usecases_test).
--include("netherl.hrl").
+-include("asserts.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 
-
-%%    1 2 3 4 5
-%% 1  S X X X X
-%% 2  X       X
-%% 3  X       X
-%% 4  X       X
-%% 5  X X X X X 
-simple_world_1_test() ->
+simple_square_world_1_test() ->
     %
     % GIVEN
     %
@@ -21,19 +14,10 @@ simple_world_1_test() ->
     meck:expect(ne_util, timestamp, fun() -> TS end),
     
     %
-    BlockCoords = [ {1,1}, {2,1}, {3,1}, {4,1}, {5,1},
-                    {1,2},                      {5,2},
-                    {1,3},                      {5,3},
-                    {1,4},                      {5,4},
-                    {1,5}, {2,5}, {3,5}, {4,5}, {5,5}],
-    ListOfBlocks = lists:map(fun(C) -> {C, ne_block:new_block()} end, BlockCoords),
-    World = ne_world:new_world(ListOfBlocks),
+    World = simple_square_world(),
     Prgm  = ne_program:new_program([{main, [fn1, fn1, fn1, fn1]},
                                     {fn1, [mov, mov, mov, mov, rotr]}]),
-    Exec0 = ne_program_execution:new("d06f00d"),
-    Exec1 = ne_program_execution:init_program(Exec0, Prgm),
-    Exec2 = ne_program_execution:locate_at(Exec1, {1,1}),
-    Exec3 = ne_program_execution:look_at(Exec2, east),
+    Exec3 = init_execution(Prgm, {1,1}, east),
     %
     % WHEN
     %
@@ -93,10 +77,72 @@ simple_world_1_test() ->
       {program_moved,               TS,{1,1}},
       {program_instr_prepared,      TS,{rotr,fn1,6,[{main,5}]}},
       {program_right_rotated,       TS,east}],
-    Len = length(ExpectedEvents),
+    assert_lists_are_equal(ExpectedEvents, ActualEvents).
+
+%% ------------------------------------------------------------------
+%% Utilities Functions
+%% ------------------------------------------------------------------
+
+
+%%    1 2 3 4 5
+%% 1  S X X X X
+%% 2  X       X
+%% 3  X       X
+%% 4  X       X
+%% 5  X X X X X 
+simple_square_world() ->
+    BlockCoords = [ {1,1}, {2,1}, {3,1}, {4,1}, {5,1},
+                    {1,2},                      {5,2},
+                    {1,3},                      {5,3},
+                    {1,4},                      {5,4},
+                    {1,5}, {2,5}, {3,5}, {4,5}, {5,5}],
+    ListOfBlocks = lists:map(fun(C) -> {C, ne_block:new_block()} end, BlockCoords),
+    ne_world:new_world(ListOfBlocks).
+
+
+%% ---------------------
+%% init_execution
+%% ---------------------
+
+init_execution(Prgm, Location, Direction) ->
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, Prgm),
+    Exec2 = ne_program_execution:locate_at(Exec1, Location),
+    Exec3 = ne_program_execution:look_at(Exec2, Direction),
+    Exec3.
+    
+
+%% ---------------------
+%% asserts
+%% ---------------------
+
+assert_lists_are_equal(ExpectedList, ActualList) ->
+    Len1 = length(ExpectedList),
+    Len2 = length(ActualList),
+    Len  = lists:min([Len1, Len2]),
     lists:foreach(fun(Index) -> 
-        ExpectedEvent = lists:nth(Index, ExpectedEvents),
-        ActualEvent   = lists:nth(Index, ActualEvents),
+        Expected = lists:nth(Index, ExpectedList),
+        Actual   = lists:nth(Index, ActualList),
         % ?debugFmt("#~p: ~p =?= ~p ~n", [Index, ActualEvent, ExpectedEvent]),
-        ?assertEqual(ExpectedEvent, ActualEvent) 
-    end, lists:seq(1, Len)).
+        ?assertEqual(Expected, Actual) 
+    end, lists:seq(1, Len)),
+    if
+        Len1 > Len2 ->
+            ?fail("Missing element from actual list");
+        Len2 > Len1 ->
+            ?fail("More elements than expected");
+        true ->
+            ok
+    end.
+
+%% ---------------------
+%% stop/start store
+%% ---------------------
+
+start_store() ->
+    ne_store:open_store(),
+    ne_store:start_link().
+
+stop_store() ->
+    ne_store:stop(true),
+    ne_store:close_store().
