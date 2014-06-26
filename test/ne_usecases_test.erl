@@ -11,13 +11,15 @@
 %% 4  X       X
 %% 5  X X X X X 
 simple_world_1_test() ->
-    %%
-    %% GIVEN
-    %%
-    %% Fix timestamp
+    %
+    % GIVEN
+    %
+
+    % Fix timestamp
     TS = 17,
     meck:new(ne_util),
     meck:expect(ne_util, timestamp, fun() -> TS end),
+    
     %
     BlockCoords = [ {1,1}, {2,1}, {3,1}, {4,1}, {5,1},
                     {1,2},                      {5,2},
