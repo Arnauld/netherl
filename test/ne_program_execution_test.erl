@@ -192,8 +192,8 @@ next_instruction_should_returns_the_next_instruction_in_the_same_sequence_test()
     Exec3 = ne_program_execution:look_at(Exec2, east),
     Exec4 = ne_program_execution:next_instr(Exec3, World),
     ?assertEqual({2,1}, ne_program_execution:location(Exec4)),
-    ?assertEqual(east, ne_program_execution:direction(Exec4)),
-    ?assertEqual(rotr, ne_program_execution:last_instr(Exec4)).
+    ?assertEqual(east,  ne_program_execution:direction(Exec4)),
+    ?assertEqual(mov,   ne_program_execution:last_instr(Exec4)).
 
 
 %% ------------------

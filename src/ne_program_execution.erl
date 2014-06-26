@@ -4,10 +4,8 @@
 -define(PROCESS_TIME_OUT, 45000).
 
 -record(exec, {id, 
-                prgm, 
-                prgm_fn    = main,
-                prgm_idx   = 1, 
-                prgm_stack = [],
+                prgm,
+                exec_state = {undefined, main, 1, []}, 
                 location   = {0,0},
                 direction  = north,
                 uncommited_events=[]}).
@@ -76,10 +74,9 @@ direction(Exec) ->
     Exec#exec.direction.
 
 last_instr(Exec) ->
-    Prgm = Exec#exec.prgm,
-    PrgmFn  = Exec#exec.prgm_fn,
-    PrgmIdx = Exec#exec.prgm_idx,
-    ne_program:instr_at(Prgm, PrgmFn, PrgmIdx).
+    {Instr, _Fn, _Index, _Stack} = Exec#exec.exec_state,
+    Instr.
+
 
 %% ------------------
 %% Domain - Action
@@ -142,11 +139,9 @@ rotate_right(Exec) ->
     
 next_instr(Exec, World) ->
     Prgm = Exec#exec.prgm,
-    PrgmFn  = Exec#exec.prgm_fn,
-    PrgmIdx = Exec#exec.prgm_idx,
-    PrgmStk = Exec#exec.prgm_stack,
-    {Instr, Fn, Index, Stack} = ne_program:next_instr(Prgm, PrgmFn, PrgmIdx, PrgmStk),
-    Exec1 = apply_new_event(Exec, {program_instr_prepared, timestamp(), Instr, Fn, Index, Stack}),
+    {_Instr, PrgmFn, PrgmIdx, PrgmStk} = Exec#exec.exec_state,
+    { Instr, _, _, _ } = ExecState = ne_program:next_instr(Prgm, PrgmFn, PrgmIdx, PrgmStk),
+    Exec1 = apply_new_event(Exec, {program_instr_prepared, timestamp(), ExecState}),
     case Instr of
         mov  -> move_forward(Exec1, World);
         rotl -> rotate_left(Exec1);
@@ -167,8 +162,8 @@ apply_new_event(State, Event) ->
 %%
 %%
 %%
-apply_event(Exec, {program_instr_prepared, _Timestamp, _Instr, Fn, Index, Stack}) ->
-    Exec#exec{prgm_fn=Fn, prgm_idx=Index, prgm_stack=Stack};
+apply_event(Exec, {program_instr_prepared, _Timestamp, ExecState}) ->
+    Exec#exec{exec_state=ExecState};
 
 
 apply_event(Exec, {program_location_adjusted, _Timestamp, Location, _Reason}) ->
