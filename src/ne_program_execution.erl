@@ -32,7 +32,8 @@
 
 -export([location/1,
          direction/1,
-         last_instr/1]).
+         last_instr/1,
+         id/1]).
 
 
 %% ------------------------------------------------------------------
@@ -45,6 +46,9 @@
 
 new(Id) ->
     #exec{id = Id}.
+
+id(Exec) ->
+    Exec#exec.id.
 
 process_unsaved_changes(Exec, Saver) ->
     Id = Exec#exec.id,

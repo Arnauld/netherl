@@ -21,11 +21,7 @@ simple_square_world_1_test() ->
     %
     % WHEN
     %
-    Iter  = lists:seq(1, 20),
-    ExecN = lists:foldl(fun(I, Exec) -> 
-        ne_program_execution:next_instr(Exec, World)
-    end, Exec3, Iter),
-    %
+    ExecN = next_instr_n_times(Exec3, 20, World),
     % discard mock
     meck:unload(ne_util),
     %
@@ -79,6 +75,29 @@ simple_square_world_1_test() ->
       {program_right_rotated,       TS,east}],
     assert_lists_are_equal(ExpectedEvents, ActualEvents).
 
+
+simple_square_world_with_store_and_load_from_history_test() ->
+    %
+    start_store(),
+    try
+        World = simple_square_world(),
+        Prgm  = ne_program:new_program([{main, [fn1, fn1, fn1, fn1]},
+                                        {fn1, [mov, mov, mov, mov, rotr]}]),
+        Exec0 = init_execution(Prgm, {1,1}, east),
+        Id    = ne_program_execution:id(Exec0),
+        Exec1 = next_instr_n_times(Exec0, 20, World),
+        Exec2 = ne_program_execution:process_unsaved_changes(Exec1, fun(Id, Events) -> 
+            ne_store:append_events(Id, Events)
+        end),
+        %
+        ExecA = ne_program_execution:new(Id),
+        ExecB = ne_program_execution:load_from_history(ExecA, ne_store:get_events(Id)),
+        %
+        ?assertEqual(Exec2, ExecB)
+    after
+        stop_store()
+    end.
+
 %% ------------------------------------------------------------------
 %% Utilities Functions
 %% ------------------------------------------------------------------
@@ -111,6 +130,16 @@ init_execution(Prgm, Location, Direction) ->
     Exec3 = ne_program_execution:look_at(Exec2, Direction),
     Exec3.
     
+%%
+%%
+%%
+next_instr_n_times(Exec, N, World) ->
+    Iter  = lists:seq(1, N),
+    ExecN = lists:foldl(fun(I, Ex) -> 
+        ne_program_execution:next_instr(Ex, World)
+    end, Exec, Iter),
+    ExecN.
+
 
 %% ---------------------
 %% asserts

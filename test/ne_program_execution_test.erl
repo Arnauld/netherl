@@ -3,6 +3,15 @@
 -include("asserts.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+%% ------------------
+%% id
+%% ------------------
+
+id_test() ->
+    Id = "d06f00d",
+    Ex = ne_program_execution:new(Id),
+    ?assertEqual(Id, ne_program_execution:id(Ex)).
+
 
 %% ------------------
 %% look_at
