@@ -172,6 +172,30 @@ load_from_history_test() ->
     ?assertEqual(east,   ne_program_execution:direction(Exec1)),
     ?assertEqual([],     ne_program_execution:uncommited_events(Exec1)).
 
+
+%% ----------------------------
+%% next_instr & current_instr
+%% ----------------------------
+
+next_instruction_should_returns_the_next_instruction_in_the_same_sequence_test() ->
+    World = ne_world:new_world([
+            {{1,1}, ne_block:new_block()},
+            {{2,1}, ne_block:new_block()},
+            {{2,2}, ne_block:new_block()},
+            {{1,2}, ne_block:new_block()}
+        ]),
+    Prgm  = ne_program:new_program([{main, [fn1, fn1, fn1, fn1]},
+                                    {fn1, [mov, rotr]}]),
+    Exec0 = ne_program_execution:new("d06f00d"),
+    Exec1 = ne_program_execution:init_program(Exec0, Prgm),
+    Exec2 = ne_program_execution:locate_at(Exec1, {1,1}),
+    Exec3 = ne_program_execution:look_at(Exec2, east),
+    Exec4 = ne_program_execution:next_instr(Exec3, World),
+    ?assertEqual({2,1}, ne_program_execution:location(Exec4)),
+    ?assertEqual(east, ne_program_execution:direction(Exec4)),
+    ?assertEqual(rotr, ne_program_execution:last_instr(Exec4)).
+
+
 %% ------------------
 %% usecases
 %% ------------------

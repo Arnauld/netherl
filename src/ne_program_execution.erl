@@ -5,10 +5,11 @@
 
 -record(exec, {id, 
                 prgm, 
-                prgm_idx  = 0, 
-                prgm_fn   = main,
-                location  = {0,0},
-                direction = north,
+                prgm_fn    = main,
+                prgm_idx   = 1, 
+                prgm_stack = [],
+                location   = {0,0},
+                direction  = north,
                 uncommited_events=[]}).
 
 
@@ -28,10 +29,12 @@
          look_at/3,
          move_forward/2, 
          rotate_left/1, 
-         rotate_right/1]).
+         rotate_right/1,
+         next_instr/2]).
 
 -export([location/1,
-         direction/1]).
+         direction/1,
+         last_instr/1]).
 
 
 %% ------------------------------------------------------------------
@@ -71,6 +74,12 @@ location(Exec) ->
 
 direction(Exec) ->
     Exec#exec.direction.
+
+last_instr(Exec) ->
+    Prgm = Exec#exec.prgm,
+    PrgmFn  = Exec#exec.prgm_fn,
+    PrgmIdx = Exec#exec.prgm_idx,
+    ne_program:instr_at(Prgm, PrgmFn, PrgmIdx).
 
 %% ------------------
 %% Domain - Action
@@ -131,6 +140,21 @@ rotate_right(Exec) ->
     end,
     apply_new_event(Exec, {program_right_rotated, timestamp(), NewDirection}).
     
+next_instr(Exec, World) ->
+    Prgm = Exec#exec.prgm,
+    PrgmFn  = Exec#exec.prgm_fn,
+    PrgmIdx = Exec#exec.prgm_idx,
+    PrgmStk = Exec#exec.prgm_stack,
+    {Instr, Fn, Index, Stack} = ne_program:next_instr(Prgm, PrgmFn, PrgmIdx, PrgmStk),
+    Exec1 = apply_new_event(Exec, {program_instr_prepared, timestamp(), Instr, Fn, Index, Stack}),
+    case Instr of
+        mov  -> move_forward(Exec1, World);
+        rotl -> rotate_left(Exec1);
+        rotr -> rotate_right(Exec1)
+    end.
+
+
+
 %% ------------------------------------------------------------------
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
@@ -143,6 +167,9 @@ apply_new_event(State, Event) ->
 %%
 %%
 %%
+apply_event(Exec, {program_instr_prepared, _Timestamp, _Instr, Fn, Index, Stack}) ->
+    Exec#exec{prgm_fn=Fn, prgm_idx=Index, prgm_stack=Stack};
+
 
 apply_event(Exec, {program_location_adjusted, _Timestamp, Location, _Reason}) ->
     Exec#exec{location=Location};
